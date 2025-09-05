@@ -10,6 +10,96 @@ const auth = require('../middleware/auth');
 const roleAuth = require('../middleware/roleAuth');
 const { uploadProfilePhoto, uploadDocuments, handleUploadError } = require('../middleware/upload');
 
+// Check verification status after authentication
+router.get('/verification-status', auth, roleAuth('freelancer'), async (req, res) => {
+  try {
+    const profile = await FreelancerProfile.findOne({ userId: req.user._id });
+
+    if (!profile) {
+      return res.json({
+        success: true,
+        data: {
+          hasProfile: false,
+          verificationStatus: 'not_found',
+          message: 'No profile found. Please create your freelancer profile.',
+          nextAction: 'create_profile',
+          canNavigateToDashboard: false
+        }
+      });
+    }
+
+    // Determine status and next actions
+    let statusMessage = '';
+    let nextAction = '';
+    let canNavigateToDashboard = false;
+    let canResubmit = false;
+    let canCheckStatus = false;
+
+    switch (profile.verificationStatus) {
+      case 'pending':
+        statusMessage = 'Your profile is pending verification. Please wait for admin approval.';
+        nextAction = 'wait_for_approval';
+        canCheckStatus = true;
+        break;
+      
+      case 'under_review':
+        statusMessage = 'Your profile is currently under review by our admin team.';
+        nextAction = 'wait_for_approval';
+        canCheckStatus = true;
+        break;
+      
+      case 'approved':
+        statusMessage = `Your profile has been approved! Your Freelancer ID is: ${profile.freelancerId}`;
+        nextAction = 'navigate_to_dashboard';
+        canNavigateToDashboard = true;
+        break;
+      
+      case 'rejected':
+        statusMessage = `Your profile was rejected. Reason: ${profile.rejectionReason || 'Please check your documents and try again.'}`;
+        nextAction = 'resubmit_verification';
+        canResubmit = true;
+        break;
+      
+      case 'resubmitted':
+        statusMessage = 'Your profile has been resubmitted for verification. Please wait for admin approval.';
+        nextAction = 'wait_for_approval';
+        canCheckStatus = true;
+        break;
+      
+      default:
+        statusMessage = 'Unknown verification status. Please contact support.';
+        nextAction = 'contact_support';
+    }
+
+    res.json({
+      success: true,
+      data: {
+        hasProfile: true,
+        verificationStatus: profile.verificationStatus,
+        freelancerId: profile.freelancerId,
+        statusMessage,
+        nextAction,
+        canNavigateToDashboard,
+        canResubmit,
+        canCheckStatus,
+        rejectionReason: profile.rejectionReason,
+        profile: {
+          fullName: profile.fullName,
+          isProfileComplete: profile.isProfileComplete,
+          createdAt: profile.createdAt,
+          updatedAt: profile.updatedAt
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Check verification status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to check verification status'
+    });
+  }
+});
+
 // Resubmit verification
 router.post('/profile/resubmit',
   auth,
@@ -59,16 +149,30 @@ router.post('/profile/resubmit',
         });
       }
 
-      // Update profile with new details (replace previous details)
+      // Update profile with new details (replace previous details completely)
       existingProfile.fullName = fullName;
       existingProfile.dateOfBirth = dateOfBirth;
       existingProfile.gender = gender;
       existingProfile.address = address;
-      existingProfile.profilePhoto = documents.profilePhoto || existingProfile.profilePhoto;
-      existingProfile.documents = { ...existingProfile.documents, ...documents };
+      
+      // Replace profile photo if new one is uploaded
+      if (documents.profilePhoto) {
+        existingProfile.profilePhoto = documents.profilePhoto;
+      }
+      
+      // Replace all documents with new ones (complete replacement)
+      existingProfile.documents = {
+        aadhaarFront: documents.aadhaarFront || null,
+        aadhaarBack: documents.aadhaarBack || null,
+        drivingLicenseFront: documents.drivingLicenseFront || null,
+        drivingLicenseBack: documents.drivingLicenseBack || null,
+        panFront: documents.panFront || null
+      };
+      
       existingProfile.verificationStatus = 'resubmitted';
       existingProfile.rejectionReason = null; // Clear previous rejection reason
       existingProfile.isProfileComplete = true;
+      existingProfile.updatedAt = new Date(); // Update timestamp
 
       await existingProfile.save();
 

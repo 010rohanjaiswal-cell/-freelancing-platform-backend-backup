@@ -4,7 +4,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
-require('dotenv').config();
+const config = require('./config/environment');
 
 const app = express();
 
@@ -19,42 +19,37 @@ const adminRoutes = require('./routes/admin');
 const messageRoutes = require('./routes/messages');
 const seedRoutes = require('./routes/seed');
 const paymentRoutes = require('./routes/payments');
+const manualVerificationRoutes = require('./routes/manualVerification');
+const firebaseTestRoutes = require('./routes/firebaseTest');
+const verificationTestRoutes = require('./routes/verificationTest');
+const verificationFormTestRoutes = require('./routes/verificationFormTest');
 
 // Security middleware
 app.use(helmet());
 
 // CORS configuration for frontend integration
-const allowedOrigins = [
-  'http://localhost:3000', // Next.js admin panel
-  'http://localhost:19006', // Expo development
-  'http://localhost:8081', // React Native Metro
-  'https://your-admin-panel.vercel.app', // Production admin panel
-  'https://your-mobile-app.expo.dev', // Production mobile app
-  process.env.CORS_ORIGIN // Custom origin from env
-].filter(Boolean);
-
 const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or Postman)
     if (!origin) return callback(null, true);
     
-    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+    if (config.cors.origin.indexOf(origin) !== -1 || config.server.isDevelopment) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: process.env.CORS_CREDENTIALS === 'true',
+  credentials: config.cors.credentials,
   optionsSuccessStatus: 200,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  methods: config.cors.methods,
+  allowedHeaders: config.cors.allowedHeaders
 };
 app.use(cors(corsOptions));
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // limit each IP to 100 requests per windowMs
+  windowMs: config.rateLimit.windowMs,
+  max: config.rateLimit.max,
   message: {
     success: false,
     message: 'Too many requests from this IP, please try again later.'
@@ -67,15 +62,21 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Static files
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, config.upload.uploadPath)));
+app.use('/public', express.static(path.join(__dirname, 'public')));
 
 // Database connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/freelancing-platform', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
+mongoose.connect(config.database.uri, config.database.options)
+.then(() => {
+  console.log('✅ Connected to MongoDB');
+  config.printSummary();
 })
-.then(() => console.log('Connected to MongoDB'))
-.catch(err => console.error('MongoDB connection error:', err));
+.catch(err => {
+  console.error('❌ MongoDB connection error:', err);
+  if (config.server.isProduction) {
+    process.exit(1);
+  }
+});
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -88,10 +89,19 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/seed', seedRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/manual-verification', manualVerificationRoutes);
+app.use('/api/firebase-test', firebaseTestRoutes);
+app.use('/api/verification-test', verificationTestRoutes);
+app.use('/api/verification-form', verificationFormTestRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Freelancing Platform API is running' });
+});
+
+// Manual verification page
+app.get('/verification', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'verification.html'));
 });
 
 // Error handling middleware
@@ -109,8 +119,15 @@ app.use('*', (req, res) => {
   res.status(404).json({ success: false, message: 'Route not found' });
 });
 
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV}`);
+const PORT = config.server.port;
+const HOST = config.server.host;
+
+app.listen(PORT, HOST, () => {
+  console.log(`🚀 Server running on ${HOST}:${PORT}`);
+  console.log(`🌍 Environment: ${config.server.env}`);
+  console.log(`🔗 API Base URL: ${config.server.apiBaseUrl}`);
+  console.log(`📱 Manual Verification: ${config.server.apiBaseUrl}/verification`);
+  console.log(`🔧 API Health Check: ${config.server.apiBaseUrl}/api/health`);
+  console.log(`📊 Firebase Project: ${config.firebase.projectId || 'Not configured'}`);
+  console.log(`☁️  Cloudinary: ${config.cloudinary.isEnabled ? 'Enabled' : 'Disabled'}`);
 });
