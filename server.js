@@ -132,3 +132,4 @@ app.listen(PORT, HOST, () => {
   console.log(`☁️  Cloudinary: ${config.cloudinary.isEnabled ? 'Enabled' : 'Disabled'}`);
 });
 // Updated Fri Sep  5 16:16:08 IST 2025
+console.log("Deployment test: $(date)");
