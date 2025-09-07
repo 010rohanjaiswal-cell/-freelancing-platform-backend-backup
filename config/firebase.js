@@ -9,24 +9,23 @@ let firebaseApp;
 try {
   // Check if Firebase is already initialized
   if (admin.apps.length === 0) {
-    // Initialize Firebase Admin SDK
-    // In production, you should use a service account key file
-    // For development, we can initialize without credentials
+    // Initialize Firebase Admin SDK with real project configuration
     firebaseApp = admin.initializeApp({
-      // If you have a service account key file, use this:
-      // credential: admin.credential.cert(require('../path/to/serviceAccountKey.json')),
-      
-      // For development without service account (limited functionality)
-      // credential: admin.credential.applicationDefault(),
-      
-      // Project ID from environment variable
-      projectId: process.env.FIREBASE_PROJECT_ID || 'freelancing-platform',
+      // Use service account key if available, otherwise use project ID
+      credential: admin.credential.applicationDefault(),
+      projectId: 'freelancing-platform-v2',
+      storageBucket: 'freelancing-platform-v2.firebasestorage.app'
     });
+    
+    console.log('✅ Firebase Admin SDK initialized successfully');
+    console.log(`   Project ID: freelancing-platform-v2`);
+    console.log(`   Storage Bucket: freelancing-platform-v2.firebasestorage.app`);
   } else {
     firebaseApp = admin.app();
   }
 } catch (error) {
-  console.error('Firebase initialization error:', error);
+  console.error('❌ Firebase initialization error:', error.message);
+  console.log('⚠️  Firebase will run in limited mode');
   firebaseApp = null;
 }
 

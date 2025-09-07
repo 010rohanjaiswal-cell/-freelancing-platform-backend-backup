@@ -4,10 +4,12 @@ class PaymentGateway {
   constructor() {
     this.clientId = process.env.PAYMENT_CLIENT_ID || 'TEST-M23OKIGC1N363_25081';
     this.clientSecret = process.env.PAYMENT_CLIENT_SECRET || 'OWFkNzQxNjAtZjQ2Yi00YjRkLWE0ZDMtOWQxMzQ0NWZiMGZm';
-    this.baseUrl = process.env.PAYMENT_BASE_URL || 'https://api.phonepe.com/apis/hermes'; // Update with actual API URL
+    this.baseUrl = process.env.PAYMENT_BASE_URL || 'https://api-preprod.phonepe.com/apis/pg-sandbox';
     this.merchantId = process.env.PAYMENT_MERCHANT_ID || 'TEST_MERCHANT';
-    this.redirectUrl = process.env.PAYMENT_REDIRECT_URL || 'http://localhost:3000/payment/callback';
-    this.callbackUrl = process.env.PAYMENT_CALLBACK_URL || 'http://localhost:10000/api/payments/callback';
+    this.redirectUrl = process.env.PAYMENT_REDIRECT_URL || 'https://freelancer-backend-jv21.onrender.com/payment/callback';
+    this.callbackUrl = process.env.PAYMENT_CALLBACK_URL || 'https://freelancer-backend-jv21.onrender.com/api/payments/callback';
+    this.saltKey = this.clientSecret;
+    this.saltIndex = 1;
   }
 
   // Generate authentication headers
@@ -56,27 +58,45 @@ class PaymentGateway {
         },
         merchantOrderId: orderId,
         message: description,
-        email: `${customerPhone}@example.com`, // You can update this
+        email: `${customerPhone}@example.com`,
         shortName: customerName,
-        name: customerName,
-        appId: this.clientId,
-        saltKey: this.clientSecret,
-        saltIndex: 1
+        name: customerName
       };
 
-      const headers = this.generateHeaders();
+      // Create base64 encoded payload
+      const base64Payload = Buffer.from(JSON.stringify(payload)).toString('base64');
+      
+      // Generate checksum
+      const checksum = this.generateChecksum(base64Payload + '/pg/v1/pay' + this.saltKey);
+      
+      const requestPayload = {
+        request: base64Payload
+      };
+
+      const headers = {
+        'Content-Type': 'application/json',
+        'X-VERIFY': checksum + '###' + this.saltIndex,
+        'accept': 'application/json'
+      };
       
       const response = await axios.post(
         `${this.baseUrl}/pg/v1/pay`,
-        payload,
+        requestPayload,
         { headers }
       );
 
-      return {
-        success: true,
-        data: response.data,
-        paymentUrl: response.data.data.instrumentResponse.redirectInfo.url
-      };
+      if (response.data.success) {
+        return {
+          success: true,
+          data: response.data,
+          paymentUrl: response.data.data.instrumentResponse.redirectInfo.url
+        };
+      } else {
+        return {
+          success: false,
+          error: response.data.message || 'Payment request failed'
+        };
+      }
 
     } catch (error) {
       console.error('Payment request error:', error.response?.data || error.message);

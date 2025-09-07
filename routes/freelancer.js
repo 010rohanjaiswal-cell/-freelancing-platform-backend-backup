@@ -114,7 +114,8 @@ router.post('/profile/resubmit',
         fullName,
         dateOfBirth,
         gender,
-        address
+        address,
+        pincode
       } = req.body;
 
       // Check if profile exists and is rejected
@@ -154,6 +155,7 @@ router.post('/profile/resubmit',
       existingProfile.dateOfBirth = dateOfBirth;
       existingProfile.gender = gender;
       existingProfile.address = address;
+      existingProfile.pincode = pincode;
       
       // Replace profile photo if new one is uploaded
       if (documents.profilePhoto) {
@@ -255,7 +257,8 @@ router.post('/profile',
         fullName,
         dateOfBirth,
         gender,
-        address
+        address,
+        pincode
       } = req.body;
 
       // Handle file uploads
@@ -290,6 +293,7 @@ router.post('/profile',
           dateOfBirth,
           gender,
           address,
+          pincode,
           profilePhoto: documents.profilePhoto || profile.profilePhoto,
           documents: { ...profile.documents, ...documents },
           isProfileComplete: true,
@@ -303,6 +307,7 @@ router.post('/profile',
           dateOfBirth,
           gender,
           address,
+          pincode,
           profilePhoto: documents.profilePhoto,
           documents,
           isProfileComplete: true,
@@ -420,6 +425,37 @@ router.get('/jobs/available', auth, roleAuth('freelancer'), async (req, res) => 
   }
 });
 
+// Check if freelancer has active jobs
+router.get('/jobs/active-status', auth, roleAuth('freelancer'), async (req, res) => {
+  try {
+    const activeJob = await Job.findOne({
+      freelancerId: req.user._id,
+      status: { $in: ['assigned', 'work_done', 'waiting_for_payment'] }
+    });
+
+    res.json({
+      success: true,
+      data: {
+        hasActiveJob: !!activeJob,
+        activeJob: activeJob ? {
+          id: activeJob._id,
+          title: activeJob.title,
+          status: activeJob.status,
+          assignedAt: activeJob.assignedAt,
+          canApplyForNewJobs: false
+        } : null,
+        canApplyForNewJobs: !activeJob
+      }
+    });
+  } catch (error) {
+    console.error('Get active job status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get active job status'
+    });
+  }
+});
+
 // Get assigned jobs
 router.get('/jobs/assigned', auth, roleAuth('freelancer'), async (req, res) => {
   try {
@@ -481,6 +517,40 @@ router.post('/jobs/:jobId/apply',
           success: false,
           message: 'Your profile must be approved before you can apply for jobs',
           verificationStatus: profile?.verificationStatus || 'not_found'
+        });
+      }
+
+      // Check if freelancer already has an active job
+      const activeJob = await Job.findOne({
+        freelancerId: req.user._id,
+        status: { $in: ['assigned', 'work_done', 'waiting_for_payment'] }
+      });
+
+      if (activeJob) {
+        return res.status(400).json({
+          success: false,
+          message: 'You already have an active job. Please complete your current job before applying for new ones.',
+          activeJob: {
+            id: activeJob._id,
+            title: activeJob.title,
+            status: activeJob.status,
+            assignedAt: activeJob.assignedAt
+          }
+        });
+      }
+
+      // Check commission threshold
+      const CommissionLedger = require('../models/CommissionLedger');
+      const canWork = await CommissionLedger.canFreelancerWork(req.user._id, 500);
+      
+      if (!canWork) {
+        const { totalDue } = await CommissionLedger.getTotalDue(req.user._id);
+        return res.status(400).json({
+          success: false,
+          message: `You have ₹${totalDue} in commission dues. Please clear dues to continue working.`,
+          commissionDue: totalDue,
+          threshold: 500,
+          canWork: false
         });
       }
 
@@ -564,20 +634,77 @@ router.post('/jobs/:jobId/work-done',
         });
       }
 
-      job.status = 'work_done';
+      job.status = 'waiting_for_payment';
       job.workCompletedAt = new Date();
       await job.save();
 
       res.json({
         success: true,
-        message: 'Work marked as completed',
-        data: { job }
+        message: 'Work marked as completed. Waiting for payment.',
+        data: { 
+          job,
+          nextAction: 'waiting_for_payment',
+          buttonText: 'Waiting for Payment',
+          showSpinner: true
+        }
       });
     } catch (error) {
       console.error('Mark work done error:', error);
       res.status(500).json({
         success: false,
         message: 'Failed to mark work as done'
+      });
+    }
+  }
+);
+
+// Mark job as completed (after payment received)
+router.post('/jobs/:jobId/complete',
+  auth,
+  roleAuth('freelancer'),
+  async (req, res) => {
+    try {
+      const { jobId } = req.params;
+
+      const job = await Job.findOne({
+        _id: jobId,
+        freelancerId: req.user._id,
+        status: 'paid'
+      });
+
+      if (!job) {
+        return res.status(400).json({
+          success: false,
+          message: 'Job not found or payment not received yet'
+        });
+      }
+
+      job.status = 'completed';
+      job.completedAt = new Date();
+      await job.save();
+
+      // Update freelancer stats
+      const profile = await FreelancerProfile.findOne({ userId: req.user._id });
+      if (profile) {
+        profile.completedJobs += 1;
+        profile.totalEarnings += job.amount;
+        await profile.save();
+      }
+
+      res.json({
+        success: true,
+        message: 'Job marked as completed successfully',
+        data: { 
+          job,
+          nextAction: 'navigate_to_orders',
+          message: 'Job completed! You can now apply for new jobs.'
+        }
+      });
+    } catch (error) {
+      console.error('Mark job complete error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to mark job as completed'
       });
     }
   }
@@ -692,6 +819,260 @@ router.post('/withdraw',
       res.status(500).json({
         success: false,
         message: 'Failed to process withdrawal'
+      });
+    }
+  }
+);
+
+// Get commission ledger
+router.get('/commission-ledger', auth, roleAuth('freelancer'), async (req, res) => {
+  try {
+    const CommissionLedger = require('../models/CommissionLedger');
+    
+    const ledgerEntries = await CommissionLedger.find({
+      freelancerId: req.user._id
+    })
+    .populate('jobId', 'title amount')
+    .sort({ createdAt: -1 });
+
+    // Get total due amount
+    const { totalDue, count } = await CommissionLedger.getTotalDue(req.user._id);
+    
+    // Check if freelancer can work (threshold check)
+    const canWork = await CommissionLedger.canFreelancerWork(req.user._id, 500);
+
+    res.json({
+      success: true,
+      data: {
+        ledgerEntries,
+        totalDue,
+        pendingCount: count,
+        canWork,
+        threshold: 500,
+        isOverThreshold: totalDue >= 500
+      }
+    });
+  } catch (error) {
+    console.error('Get commission ledger error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get commission ledger'
+    });
+  }
+});
+
+// Clear commission due
+router.post('/commission-ledger/clear-due', auth, roleAuth('freelancer'), async (req, res) => {
+  try {
+    const { amount, paymentMethod } = req.body;
+    const CommissionLedger = require('../models/CommissionLedger');
+    
+    // Get total due amount
+    const { totalDue } = await CommissionLedger.getTotalDue(req.user._id);
+    
+    if (amount > totalDue) {
+      return res.status(400).json({
+        success: false,
+        message: 'Amount cannot exceed total due amount'
+      });
+    }
+
+    // Check freelancer wallet balance
+    let wallet = await Wallet.findOne({ userId: req.user._id });
+    if (!wallet || wallet.balance < amount) {
+      return res.status(400).json({
+        success: false,
+        message: 'Insufficient wallet balance'
+      });
+    }
+
+    // Get pending ledger entries
+    const pendingEntries = await CommissionLedger.find({
+      freelancerId: req.user._id,
+      status: 'pending'
+    }).sort({ createdAt: 1 });
+
+    let remainingAmount = amount;
+    const processedEntries = [];
+
+    // Process entries in chronological order
+    for (const entry of pendingEntries) {
+      if (remainingAmount <= 0) break;
+      
+      const entryAmount = Math.min(entry.amount, remainingAmount);
+      
+      if (entryAmount === entry.amount) {
+        // Full payment for this entry
+        await entry.markAsPaid(paymentMethod, `CLEAR_DUE_${Date.now()}`);
+        processedEntries.push({
+          id: entry._id,
+          amount: entry.amount,
+          status: 'fully_paid'
+        });
+      } else {
+        // Partial payment - create new entry for remaining amount
+        const remainingEntry = new CommissionLedger({
+          freelancerId: entry.freelancerId,
+          jobId: entry.jobId,
+          amount: entry.amount - entryAmount,
+          type: entry.type,
+          description: entry.description,
+          status: 'pending'
+        });
+        await remainingEntry.save();
+        
+        // Update original entry
+        entry.amount = entryAmount;
+        await entry.markAsPaid(paymentMethod, `CLEAR_DUE_${Date.now()}`);
+        processedEntries.push({
+          id: entry._id,
+          amount: entryAmount,
+          status: 'partially_paid'
+        });
+      }
+      
+      remainingAmount -= entryAmount;
+    }
+
+    // Deduct amount from freelancer wallet
+    wallet.balance -= amount;
+    await wallet.save();
+
+    // Create transaction record
+    const Transaction = require('../models/Transaction');
+    const transaction = new Transaction({
+      freelancerId: req.user._id,
+      amount: amount,
+      type: 'commission_payment',
+      status: 'completed',
+      description: `Commission payment - ₹${amount}`,
+      paymentMethod: paymentMethod,
+      referenceId: `COMM_PAY_${Date.now()}`,
+      completedAt: new Date()
+    });
+    await transaction.save();
+
+    // Get updated ledger
+    const updatedLedger = await CommissionLedger.find({
+      freelancerId: req.user._id
+    })
+    .populate('jobId', 'title amount')
+    .sort({ createdAt: -1 });
+
+    const { totalDue: newTotalDue } = await CommissionLedger.getTotalDue(req.user._id);
+    const canWork = await CommissionLedger.canFreelancerWork(req.user._id, 500);
+
+    res.json({
+      success: true,
+      message: `Successfully paid ₹${amount} towards commission`,
+      data: {
+        amountPaid: amount,
+        processedEntries,
+        updatedLedger,
+        totalDue: newTotalDue,
+        canWork,
+        transaction
+      }
+    });
+
+  } catch (error) {
+    console.error('Clear commission due error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to clear commission due'
+    });
+  }
+});
+
+// Check if freelancer can work (threshold check)
+router.get('/can-work', auth, roleAuth('freelancer'), async (req, res) => {
+  try {
+    const CommissionLedger = require('../models/CommissionLedger');
+    
+    const canWork = await CommissionLedger.canFreelancerWork(req.user._id, 500);
+    const { totalDue } = await CommissionLedger.getTotalDue(req.user._id);
+
+    res.json({
+      success: true,
+      data: {
+        canWork,
+        totalDue,
+        threshold: 500,
+        isOverThreshold: totalDue >= 500,
+        message: canWork ? 
+          'You can continue working' : 
+          `You have ₹${totalDue} in commission dues. Please clear dues to continue working.`
+      }
+    });
+  } catch (error) {
+    console.error('Check can work error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to check work eligibility'
+    });
+  }
+});
+
+// Test endpoint to create freelancer profile without documents (for testing only)
+router.post('/profile/test',
+  auth,
+  roleAuth('freelancer'),
+  validationRules.freelancerProfile,
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const {
+        fullName,
+        dateOfBirth,
+        gender,
+        address,
+        pincode
+      } = req.body;
+
+      let profile = await FreelancerProfile.findOne({ userId: req.user._id });
+
+      if (profile) {
+        // Update existing profile
+        Object.assign(profile, {
+          fullName,
+          dateOfBirth,
+          gender,
+          address,
+          pincode,
+          isProfileComplete: true,
+          verificationStatus: 'approved' // Auto-approve for testing
+        });
+      } else {
+        // Create new profile
+        profile = new FreelancerProfile({
+          userId: req.user._id,
+          freelancerId: 'TEST' + Date.now().toString().slice(-6),
+          fullName,
+          dateOfBirth,
+          gender,
+          address,
+          pincode,
+          isProfileComplete: true,
+          verificationStatus: 'approved' // Auto-approve for testing
+        });
+      }
+
+      await profile.save();
+
+      res.json({
+        success: true,
+        message: 'Test profile created successfully',
+        data: { 
+          profile,
+          verificationStatus: 'approved',
+          message: 'Test profile created and auto-approved for testing purposes.'
+        }
+      });
+    } catch (error) {
+      console.error('Test profile creation error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to create test profile'
       });
     }
   }

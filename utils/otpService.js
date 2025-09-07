@@ -24,6 +24,13 @@ class OTPService {
     if (phone === '+919876543212') {
       return '123456';
     }
+    // Test numbers for complete app flow
+    if (phone === '+919898989898') {
+      return '989898';
+    }
+    if (phone === '+918989898989') {
+      return '898989';
+    }
     
     return Math.floor(100000 + Math.random() * 900000).toString();
   }

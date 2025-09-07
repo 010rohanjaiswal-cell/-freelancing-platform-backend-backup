@@ -22,18 +22,18 @@ const freelancerProfileSchema = new mongoose.Schema({
   },
   gender: {
     type: String,
-    enum: ['male', 'female', 'other'],
+    enum: ['male', 'female'],
     required: true
   },
   address: {
-    street: String,
-    city: String,
-    state: String,
-    pincode: String,
-    country: {
-      type: String,
-      default: 'India'
-    }
+    type: String,
+    required: true,
+    trim: true
+  },
+  pincode: {
+    type: String,
+    required: true,
+    match: /^[1-9][0-9]{5}$/
   },
   profilePhoto: {
     type: String // URL to uploaded image
@@ -80,10 +80,30 @@ const freelancerProfileSchema = new mongoose.Schema({
 });
 
 // Generate freelancer ID when approved
-freelancerProfileSchema.pre('save', function(next) {
+freelancerProfileSchema.pre('save', async function(next) {
   if (this.verificationStatus === 'approved' && !this.freelancerId) {
-    // Generate 5-9 digit ID
-    this.freelancerId = Math.floor(10000 + Math.random() * 900000).toString();
+    try {
+      // Generate a long, unique freelancer ID
+      // Format: FL + YYYY + MM + 6-digit sequential number
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = (now.getMonth() + 1).toString().padStart(2, '0');
+      
+      // Get the count of approved freelancers to generate sequential number
+      const count = await this.constructor.countDocuments({ 
+        verificationStatus: 'approved',
+        freelancerId: { $exists: true }
+      });
+      
+      // Generate 6-digit sequential number (000001 to 999999)
+      const sequentialNumber = (count + 1).toString().padStart(6, '0');
+      
+      this.freelancerId = `FL${year}${month}${sequentialNumber}`;
+    } catch (error) {
+      // Fallback to timestamp-based ID if count fails
+      const timestamp = Date.now().toString();
+      this.freelancerId = `FL${timestamp}`;
+    }
   }
   next();
 });

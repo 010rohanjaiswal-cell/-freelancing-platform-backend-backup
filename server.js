@@ -21,8 +21,9 @@ const seedRoutes = require('./routes/seed');
 const paymentRoutes = require('./routes/payments');
 const manualVerificationRoutes = require('./routes/manualVerification');
 const firebaseTestRoutes = require('./routes/firebaseTest');
-const verificationTestRoutes = require('./routes/verificationTest');
-const verificationFormTestRoutes = require('./routes/verificationFormTest');
+const realFirebaseAuthRoutes = require('./routes/realFirebaseAuth');
+const verificationFormRoutes = require('./routes/verificationForm');
+// Test routes removed - using CLI admin app instead
 
 // Security middleware
 app.use(helmet());
@@ -91,18 +92,16 @@ app.use('/api/seed', seedRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/manual-verification', manualVerificationRoutes);
 app.use('/api/firebase-test', firebaseTestRoutes);
-app.use('/api/verification-test', verificationTestRoutes);
-app.use('/api/verification-form', verificationFormTestRoutes);
+app.use('/api/real-firebase-auth', realFirebaseAuthRoutes);
+app.use('/api/verification-form', verificationFormRoutes);
+// Test routes removed - using CLI admin app instead
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Freelancing Platform API is running' });
 });
 
-// Manual verification page
-app.get('/verification', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'verification.html'));
-});
+// Admin panel routes removed - using CLI admin app instead
 
 // Error handling middleware
 app.use((err, req, res, next) => {

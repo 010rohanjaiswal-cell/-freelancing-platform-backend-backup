@@ -42,7 +42,7 @@ const jobSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['open', 'assigned', 'work_done', 'waiting_for_payment', 'completed', 'cancelled'],
+    enum: ['open', 'assigned', 'work_done', 'waiting_for_payment', 'paid', 'completed', 'cancelled'],
     default: 'open'
   },
   assignedAt: {
@@ -51,8 +51,27 @@ const jobSchema = new mongoose.Schema({
   workCompletedAt: {
     type: Date
   },
-  paymentCompletedAt: {
+  paymentOrderId: {
+    type: String
+  },
+  paymentStatus: {
+    type: String,
+    enum: ['initiated', 'completed', 'failed'],
+    default: undefined
+  },
+  paymentTransactionId: {
+    type: String
+  },
+  paidAt: {
     type: Date
+  },
+  completedAt: {
+    type: Date
+  },
+  paymentMethod: {
+    type: String,
+    enum: ['upi', 'cash', 'wallet', 'bank_transfer'],
+    default: undefined
   },
   cancelledAt: {
     type: Date

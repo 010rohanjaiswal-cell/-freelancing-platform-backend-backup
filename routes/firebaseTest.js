@@ -12,7 +12,8 @@ router.post('/test-auth', async (req, res) => {
     // Validate test credentials
     const validCredentials = [
       { phone: '+919090909090', otp: '909090' },
-      { phone: '+918080808080', otp: '808080' }
+      { phone: '+918080808080', otp: '808080' },
+      { phone: '+916060606060', otp: '606060' }
     ];
     
     const isValidCredential = validCredentials.some(cred => 
@@ -114,7 +115,8 @@ router.get('/config', async (req, res) => {
         isAvailable,
         testCredentials: [
           { phone: '+919090909090', otp: '909090' },
-          { phone: '+918080808080', otp: '808080' }
+          { phone: '+918080808080', otp: '808080' },
+          { phone: '+916060606060', otp: '606060' }
         ]
       }
     });

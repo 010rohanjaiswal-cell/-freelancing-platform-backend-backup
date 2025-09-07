@@ -19,27 +19,51 @@ const validationRules = {
     body('fullName')
       .trim()
       .isLength({ min: 2, max: 50 })
-      .withMessage('Full name must be between 2 and 50 characters'),
+      .withMessage('Full name must be between 2 and 50 characters')
+      .custom((value) => {
+        // Check if full name contains at least 2 words (first and last name)
+        const words = value.trim().split(/\s+/);
+        if (words.length < 2) {
+          throw new Error('Please enter your full name (first and last name)');
+        }
+        // Check if all words contain only letters
+        const nameRegex = /^[a-zA-Z\s]+$/;
+        if (!nameRegex.test(value)) {
+          throw new Error('Full name should contain only letters');
+        }
+        return true;
+      }),
     body('dateOfBirth')
       .isISO8601()
-      .withMessage('Please enter a valid date of birth'),
+      .withMessage('Please enter a valid date of birth')
+      .custom((value) => {
+        const birthDate = new Date(value);
+        const today = new Date();
+        const age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+          age--;
+        }
+        
+        if (age < 18) {
+          throw new Error('You must be at least 18 years old');
+        }
+        if (age > 100) {
+          throw new Error('Please enter a valid date of birth');
+        }
+        return true;
+      }),
     body('gender')
-      .isIn(['male', 'female', 'other'])
-      .withMessage('Please select a valid gender'),
-    body('address.street')
-      .optional()
+      .isIn(['male', 'female'])
+      .withMessage('Please select your gender (Male or Female)'),
+    body('address')
       .trim()
-      .isLength({ min: 5, max: 100 })
-      .withMessage('Street address must be between 5 and 100 characters'),
-    body('address.city')
-      .optional()
-      .trim()
-      .isLength({ min: 2, max: 50 })
-      .withMessage('City must be between 2 and 50 characters'),
-    body('address.pincode')
-      .optional()
-      .isPostalCode('IN')
-      .withMessage('Please enter a valid Indian pincode')
+      .isLength({ min: 10, max: 200 })
+      .withMessage('Address must be between 10 and 200 characters'),
+    body('pincode')
+      .matches(/^[1-9][0-9]{5}$/)
+      .withMessage('Please enter a valid 6-digit pincode')
   ],
   
   clientProfile: [
@@ -137,6 +161,58 @@ const validationRules = {
       .trim()
       .isLength({ min: 10, max: 500 })
       .withMessage('Refund reason must be between 10 and 500 characters')
+  ],
+  
+  // Verification form validation
+  verificationForm: [
+    body('fullName')
+      .trim()
+      .isLength({ min: 2, max: 50 })
+      .withMessage('Full name must be between 2 and 50 characters')
+      .custom((value) => {
+        // Check if full name contains at least 2 words (first and last name)
+        const words = value.trim().split(/\s+/);
+        if (words.length < 2) {
+          throw new Error('Please enter your full name (first and last name)');
+        }
+        // Check if all words contain only letters
+        const nameRegex = /^[a-zA-Z\s]+$/;
+        if (!nameRegex.test(value)) {
+          throw new Error('Full name should contain only letters');
+        }
+        return true;
+      }),
+    body('dateOfBirth')
+      .isISO8601()
+      .withMessage('Please enter a valid date of birth')
+      .custom((value) => {
+        const birthDate = new Date(value);
+        const today = new Date();
+        const age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+          age--;
+        }
+        
+        if (age < 18) {
+          throw new Error('You must be at least 18 years old');
+        }
+        if (age > 100) {
+          throw new Error('Please enter a valid date of birth');
+        }
+        return true;
+      }),
+    body('gender')
+      .isIn(['male', 'female'])
+      .withMessage('Please select your gender (Male or Female)'),
+    body('address')
+      .trim()
+      .isLength({ min: 10, max: 200 })
+      .withMessage('Address must be between 10 and 200 characters'),
+    body('pincode')
+      .matches(/^[1-9][0-9]{5}$/)
+      .withMessage('Please enter a valid 6-digit pincode')
   ]
 };
 
