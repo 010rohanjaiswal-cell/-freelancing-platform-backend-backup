@@ -6,8 +6,8 @@ class PaymentGateway {
     this.clientSecret = process.env.PAYMENT_CLIENT_SECRET || 'OWFkNzQxNjAtZjQ2Yi00YjRkLWE0ZDMtOWQxMzQ0NWZiMGZm';
     this.baseUrl = process.env.PAYMENT_BASE_URL || 'https://api-preprod.phonepe.com/apis/pg-sandbox';
     this.merchantId = process.env.PAYMENT_MERCHANT_ID || 'TEST_MERCHANT';
-    this.redirectUrl = process.env.PAYMENT_REDIRECT_URL || 'https://freelancer-backend-jv21.onrender.com/payment/callback';
-    this.callbackUrl = process.env.PAYMENT_CALLBACK_URL || 'https://freelancer-backend-jv21.onrender.com/api/payments/callback';
+    this.redirectUrl = process.env.PAYMENT_REDIRECT_URL || 'https://freelancing-platform-backend-backup.onrender.com/payment/callback';
+    this.callbackUrl = process.env.PAYMENT_CALLBACK_URL || 'https://freelancing-platform-backend-backup.onrender.com/api/payments/callback';
     this.saltKey = this.clientSecret;
     this.saltIndex = 1;
   }

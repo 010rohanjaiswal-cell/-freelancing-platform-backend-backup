@@ -7,10 +7,10 @@ Your freelancing platform backend is now **fully configured** with your actual p
 ## 🎯 **Production Configuration Summary**
 
 ### **🌐 Production URLs**
-- **Backend API**: `https://freelancer-backend-jv21.onrender.com`
-- **API Base**: `https://freelancer-backend-jv21.onrender.com/api`
-- **Manual Verification**: `https://freelancer-backend-jv21.onrender.com/verification`
-- **Health Check**: `https://freelancer-backend-jv21.onrender.com/api/health`
+- **Backend API**: `https://freelancing-platform-backend-backup.onrender.com`
+- **API Base**: `https://freelancing-platform-backend-backup.onrender.com/api`
+- **Manual Verification**: `https://freelancing-platform-backend-backup.onrender.com/verification`
+- **Health Check**: `https://freelancing-platform-backend-backup.onrender.com/api/health`
 
 ### **🔧 Development URLs**
 - **Backend API**: `http://localhost:3001`
@@ -37,7 +37,7 @@ Your freelancing platform backend is now **fully configured** with your actual p
 
 ### **✅ Render Deployment**
 - **Service**: `freelancer-backend-jv21`
-- **URL**: `https://freelancer-backend-jv21.onrender.com`
+- **URL**: `https://freelancing-platform-backend-backup.onrender.com`
 - **Environment**: Production
 
 ## 📱 **Frontend Integration Ready**
@@ -45,7 +45,7 @@ Your freelancing platform backend is now **fully configured** with your actual p
 ### **React Native (Expo)**
 ```bash
 # .env.production
-API_URL=https://freelancer-backend-jv21.onrender.com
+API_URL=https://freelancing-platform-backend-backup.onrender.com
 
 # .env.development
 API_URL=http://localhost:3001
@@ -54,8 +54,8 @@ API_URL=http://localhost:3001
 ### **Next.js Admin Panel**
 ```bash
 # .env.production
-NEXT_PUBLIC_API_URL=https://freelancer-backend-jv21.onrender.com
-API_URL=https://freelancer-backend-jv21.onrender.com
+NEXT_PUBLIC_API_URL=https://freelancing-platform-backend-backup.onrender.com
+API_URL=https://freelancing-platform-backend-backup.onrender.com
 
 # .env.development
 NEXT_PUBLIC_API_URL=http://localhost:3001
@@ -65,7 +65,7 @@ API_URL=http://localhost:3001
 ### **Mobile App Fallback System**
 ```javascript
 const fallbackUrls = [
-  'https://freelancer-backend-jv21.onrender.com', // Primary - Production
+  'https://freelancing-platform-backend-backup.onrender.com', // Primary - Production
   'http://192.168.1.49:5000', // Local network
   'http://10.0.2.2:5000', // Android emulator
   'http://localhost:5000' // Localhost
@@ -83,7 +83,7 @@ const fallbackUrls = [
 ```bash
 NODE_ENV=production
 PORT=10000
-API_BASE_URL=https://freelancer-backend-jv21.onrender.com
+API_BASE_URL=https://freelancing-platform-backend-backup.onrender.com
 MONGODB_URI=mongodb+srv://rohanjaiswar2467:N8iwsBEfkbF2Dd2S@cluster1.sg9pmcf.mongodb.net/freelancing-platform
 FIREBASE_PROJECT_ID=freelancing-platform-v2
 CLOUDINARY_CLOUD_NAME=dzpqrejsi
@@ -125,7 +125,7 @@ NODE_ENV=production npm start
 npm run verification
 
 # Web interface
-# https://freelancer-backend-jv21.onrender.com/verification
+# https://freelancing-platform-backend-backup.onrender.com/verification
 ```
 
 ## 🧪 **Tested & Verified**
@@ -134,7 +134,7 @@ npm run verification
 ```bash
 Environment: production
 Port: 10000
-API Base URL: https://freelancer-backend-jv21.onrender.com
+API Base URL: https://freelancing-platform-backend-backup.onrender.com
 Database: ✅ Connected
 JWT: ✅ Configured
 Firebase: ✅ Enabled
@@ -168,7 +168,7 @@ Cloudinary: ❌ Disabled (as expected for dev)
 ## 📊 **Manual Verification System**
 
 ### **✅ MongoDB-Based Verification**
-- **Web Interface**: `https://freelancer-backend-jv21.onrender.com/verification`
+- **Web Interface**: `https://freelancing-platform-backend-backup.onrender.com/verification`
 - **API Endpoints**: `/api/manual-verification/*`
 - **Command Line Tool**: `npm run verification`
 - **No Admin Panel Required** - Direct MongoDB operations
@@ -206,19 +206,19 @@ git push origin main
 ### **2. Update Frontend Apps**
 ```bash
 # Update React Native app
-API_URL=https://freelancer-backend-jv21.onrender.com
+API_URL=https://freelancing-platform-backend-backup.onrender.com
 
 # Update Next.js admin panel
-NEXT_PUBLIC_API_URL=https://freelancer-backend-jv21.onrender.com
+NEXT_PUBLIC_API_URL=https://freelancing-platform-backend-backup.onrender.com
 ```
 
 ### **3. Test Production Deployment**
 ```bash
 # Test health check
-curl https://freelancer-backend-jv21.onrender.com/api/health
+curl https://freelancing-platform-backend-backup.onrender.com/api/health
 
 # Test manual verification
-open https://freelancer-backend-jv21.onrender.com/verification
+open https://freelancing-platform-backend-backup.onrender.com/verification
 ```
 
 ### **4. Monitor Services**
@@ -241,9 +241,9 @@ open https://freelancer-backend-jv21.onrender.com/verification
 - **`public/verification.html`** - Web verification interface
 
 ### **Key URLs**
-- **Production API**: `https://freelancer-backend-jv21.onrender.com/api`
-- **Manual Verification**: `https://freelancer-backend-jv21.onrender.com/verification`
-- **Health Check**: `https://freelancer-backend-jv21.onrender.com/api/health`
+- **Production API**: `https://freelancing-platform-backend-backup.onrender.com/api`
+- **Manual Verification**: `https://freelancing-platform-backend-backup.onrender.com/verification`
+- **Health Check**: `https://freelancing-platform-backend-backup.onrender.com/api/health`
 - **GitHub Repository**: `https://github.com/010rohanjaiswal-cell/people.git`
 
 ---
@@ -251,6 +251,6 @@ open https://freelancer-backend-jv21.onrender.com/verification
 **Status: ✅ PRODUCTION-READY**
 
 **Last Updated**: January 2025
-**Production URL**: `https://freelancer-backend-jv21.onrender.com`
+**Production URL**: `https://freelancing-platform-backend-backup.onrender.com`
 **Environment**: Production-ready with actual service URLs
 **Deployment**: Ready for Render.com deployment
