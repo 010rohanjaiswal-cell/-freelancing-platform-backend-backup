@@ -43,7 +43,7 @@ const commissionLedgerSchema = new mongoose.Schema({
   paymentMethod: {
     type: String,
     enum: ['wallet', 'bank_transfer', 'upi', 'cash'],
-    default: null
+    default: undefined
   },
   paymentTransactionId: {
     type: String
