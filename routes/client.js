@@ -674,9 +674,15 @@ router.post('/jobs/:jobId/pay-cash',
 
     } catch (error) {
       console.error('Cash payment error:', error);
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
       res.status(500).json({
         success: false,
-        message: 'Failed to process cash payment'
+        message: 'Failed to process cash payment',
+        error: error.message
       });
     }
   }
