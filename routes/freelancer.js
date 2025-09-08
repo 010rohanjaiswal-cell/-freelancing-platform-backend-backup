@@ -380,7 +380,7 @@ router.post('/profile/photo',
 // Get available jobs
 router.get('/jobs/available', auth, roleAuth('freelancer'), async (req, res) => {
   try {
-    const { page = 1, limit = 10, gender, location } = req.query;
+    const { page = 1, limit = 10, gender, jobType, sort } = req.query;
     const skip = (page - 1) * limit;
 
     const query = {
@@ -396,9 +396,20 @@ router.get('/jobs/available', auth, roleAuth('freelancer'), async (req, res) => 
       ];
     }
 
+    // Filter by job type
+    if (jobType && jobType !== 'all') {
+      query.jobType = jobType;
+    }
+
+    // Sorting
+    let sortOption = { createdAt: -1 }; // default New to old
+    if (sort === 'price_desc') sortOption = { amount: -1 };
+    if (sort === 'price_asc') sortOption = { amount: 1 };
+    if (sort === 'date_asc') sortOption = { createdAt: 1 }; // old to new
+
     const jobs = await Job.find(query)
       .populate('clientId', 'phone')
-      .sort({ createdAt: -1 })
+      .sort(sortOption)
       .skip(skip)
       .limit(parseInt(limit));
 

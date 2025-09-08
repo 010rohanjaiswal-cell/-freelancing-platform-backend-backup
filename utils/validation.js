@@ -94,6 +94,9 @@ const validationRules = {
     body('numberOfPeople')
       .isInt({ min: 1, max: 10 })
       .withMessage('Number of people must be between 1 and 10'),
+    body('jobType')
+      .isIn(['delivery','plumbing','electrical','driver','mechanic','cleaning','laundry','cooking','courier','care_taker','tailoring','barber','painting','others'])
+      .withMessage('Please select a valid job type'),
     body('genderPreference')
       .optional()
       .isIn(['male', 'female', 'any'])

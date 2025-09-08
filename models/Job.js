@@ -24,6 +24,26 @@ const jobSchema = new mongoose.Schema({
     required: true,
     min: 0
   },
+  jobType: {
+    type: String,
+    enum: [
+      'delivery',
+      'plumbing',
+      'electrical',
+      'driver',
+      'mechanic',
+      'cleaning',
+      'laundry',
+      'cooking',
+      'courier',
+      'care_taker',
+      'tailoring',
+      'barber',
+      'painting',
+      'others'
+    ],
+    required: true
+  },
   numberOfPeople: {
     type: Number,
     required: true,

@@ -121,6 +121,7 @@ router.post('/jobs',
         description,
         amount,
         numberOfPeople,
+        jobType,
         address,
         genderPreference = 'any'
       } = req.body;
@@ -131,6 +132,7 @@ router.post('/jobs',
         description,
         amount,
         numberOfPeople,
+        jobType,
         address,
         genderPreference
       });
