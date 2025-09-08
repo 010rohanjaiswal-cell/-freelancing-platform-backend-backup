@@ -874,7 +874,7 @@ router.post('/jobs/:jobId/mark-paid',
         type: 'payment',
         status: 'completed',
         description: `Test payment for job: ${job.title}`,
-        paymentMethod: 'test',
+        paymentMethod: 'wallet',
         transactionId: 'test-txn-' + Date.now()
       });
       await transaction.save();
