@@ -3,42 +3,13 @@ const OTP = require('../models/OTP');
 class OTPService {
   // Generate OTP
   static generateOTP(phone) {
-    // For testing purposes, use predictable OTPs
-    if (process.env.NODE_ENV === 'development') {
-      return '123456';
-    }
+    // For Firebase authentication, we don't need to generate OTPs
+    // Firebase handles OTP generation and verification
+    // This method is kept for backward compatibility
+    console.log(`📱 OTP generation requested for ${phone} - Firebase will handle this`);
     
-    // For production testing with specific numbers
-    if (phone === '+919999999999') {
-      return '999999';
-    }
-    if (phone === '+918888888888') {
-      return '888888';
-    }
-    if (phone === '+917777777777') {
-      return '777777';
-    }
-    if (phone === '+916666666666') {
-      return '666666';
-    }
-    if (phone === '+919876543212') {
-      return '123456';
-    }
-    // Test numbers for complete app flow
-    if (phone === '+919898989898') {
-      return '989898';
-    }
-    if (phone === '+918989898989') {
-      return '898989';
-    }
-    // Fresh test numbers for complete flow
-    if (phone === '+919777777777') {
-      return '777777';
-    }
-    if (phone === '+918777777777') {
-      return '777777';
-    }
-    
+    // Return a random OTP for logging purposes only
+    // The actual OTP verification should be done through Firebase
     return Math.floor(100000 + Math.random() * 900000).toString();
   }
 
@@ -68,6 +39,12 @@ class OTPService {
   // Verify OTP
   static async verifyOTP(phone, otp, purpose = 'login') {
     try {
+      console.log(`📱 OTP verification requested for ${phone} - Firebase should handle this`);
+      
+      // For Firebase authentication, OTP verification should be done on the frontend
+      // This method is kept for backward compatibility but should not be used
+      // with Firebase authentication flow
+      
       const otpRecord = await OTP.findOne({
         phone,
         otp,
@@ -77,7 +54,7 @@ class OTPService {
       });
 
       if (!otpRecord) {
-        return { isValid: false, message: 'Invalid or expired OTP' };
+        return { isValid: false, message: 'Invalid or expired OTP. For Firebase auth, use /api/real-firebase-auth/authenticate' };
       }
 
       // Mark OTP as used
