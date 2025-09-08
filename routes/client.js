@@ -858,9 +858,10 @@ router.post('/profile/test',
           fullName,
           dateOfBirth,
           gender,
-          address,
-          isProfileComplete: true
+          address
         });
+        // Check if profile is complete (has name and photo)
+        profile.isProfileComplete = profile.fullName && profile.profilePhoto;
       } else {
         // Create new profile
         profile = new ClientProfile({
@@ -868,9 +869,10 @@ router.post('/profile/test',
           fullName,
           dateOfBirth,
           gender,
-          address,
-          isProfileComplete: true
+          address
         });
+        // Check if profile is complete (has name and photo)
+        profile.isProfileComplete = profile.fullName && profile.profilePhoto;
       }
 
       await profile.save();
