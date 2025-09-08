@@ -637,9 +637,10 @@ router.post('/jobs/:jobId/pay-cash',
 
       // Calculate commission (10% of job amount)
       const commissionAmount = Math.round(job.amount * 0.1);
-      const freelancerAmount = job.amount - commissionAmount;
 
       // Create commission ledger entry for freelancer
+      // For cash payments, freelancer already received full amount in cash
+      // But still owes commission to the app
       const CommissionLedger = require('../models/CommissionLedger');
       const ledgerEntry = new CommissionLedger({
         freelancerId: job.freelancerId._id,
@@ -651,20 +652,12 @@ router.post('/jobs/:jobId/pay-cash',
       });
       await ledgerEntry.save();
 
-      // Update freelancer wallet with net amount (after commission)
-      let freelancerWallet = await Wallet.findOne({ userId: job.freelancerId._id });
-      if (!freelancerWallet) {
-        freelancerWallet = new Wallet({ userId: job.freelancerId._id });
-      }
-      freelancerWallet.balance += freelancerAmount;
-      await freelancerWallet.save();
-
-      // Update freelancer stats
+      // Update freelancer stats (total earnings include full amount since freelancer received it in cash)
       const FreelancerProfile = require('../models/FreelancerProfile');
       const profile = await FreelancerProfile.findOne({ userId: job.freelancerId._id });
       if (profile) {
         profile.completedJobs += 1;
-        profile.totalEarnings += freelancerAmount;
+        profile.totalEarnings += job.amount; // Full amount since freelancer received it in cash
         await profile.save();
       }
 
@@ -675,7 +668,6 @@ router.post('/jobs/:jobId/pay-cash',
           job: job,
           transaction: transaction,
           commissionAmount: commissionAmount,
-          freelancerAmount: freelancerAmount,
           ledgerEntry: ledgerEntry
         }
       });
