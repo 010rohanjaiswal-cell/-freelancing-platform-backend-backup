@@ -836,6 +836,71 @@ router.post('/payment/callback',
 );
 
 // Test endpoint to create client profile (for testing only)
+// Test endpoint to mark job as paid (for testing purposes)
+router.post('/jobs/:jobId/mark-paid',
+  auth,
+  roleAuth('client'),
+  async (req, res) => {
+    try {
+      const { jobId } = req.params;
+
+      const job = await Job.findOne({
+        _id: jobId,
+        clientId: req.user._id,
+        status: 'waiting_for_payment'
+      });
+
+      if (!job) {
+        return res.status(400).json({
+          success: false,
+          message: 'Job not found or not waiting for payment'
+        });
+      }
+
+      // Mark job as paid
+      job.status = 'paid';
+      job.paymentStatus = 'completed';
+      job.paymentTransactionId = 'test-txn-' + Date.now();
+      job.paidAt = new Date();
+      await job.save();
+
+      // Create transaction record
+      const Transaction = require('../models/Transaction');
+      const transaction = new Transaction({
+        jobId: job._id,
+        freelancerId: job.freelancerId,
+        clientId: job.clientId,
+        amount: job.amount,
+        type: 'payment',
+        status: 'completed',
+        description: `Test payment for job: ${job.title}`,
+        paymentMethod: 'test',
+        transactionId: 'test-txn-' + Date.now()
+      });
+      await transaction.save();
+
+      // Update freelancer wallet
+      let freelancerWallet = await Wallet.findOne({ userId: job.freelancerId });
+      if (!freelancerWallet) {
+        freelancerWallet = new Wallet({ userId: job.freelancerId });
+      }
+      freelancerWallet.balance += job.amount;
+      await freelancerWallet.save();
+
+      res.json({
+        success: true,
+        message: 'Job marked as paid for testing',
+        data: { job }
+      });
+    } catch (error) {
+      console.error('Mark job as paid error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to mark job as paid'
+      });
+    }
+  });
+
 router.post('/profile/test',
   auth,
   roleAuth('client'),
