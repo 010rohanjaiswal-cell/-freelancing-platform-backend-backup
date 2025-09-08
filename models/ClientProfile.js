@@ -12,13 +12,11 @@ const clientProfileSchema = new mongoose.Schema({
     trim: true
   },
   dateOfBirth: {
-    type: Date,
-    required: true
+    type: Date
   },
   gender: {
     type: String,
-    enum: ['male', 'female', 'other'],
-    required: true
+    enum: ['male', 'female', 'other']
   },
   address: {
     street: String,

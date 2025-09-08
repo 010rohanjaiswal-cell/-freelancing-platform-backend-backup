@@ -11,6 +11,47 @@ const auth = require('../middleware/auth');
 const roleAuth = require('../middleware/roleAuth');
 const { uploadProfilePhoto, handleUploadError } = require('../middleware/upload');
 
+// Check if client profile is complete
+router.get('/profile/status', auth, roleAuth('client'), async (req, res) => {
+  try {
+    const profile = await ClientProfile.findOne({ userId: req.user._id });
+
+    if (!profile) {
+      return res.json({
+        success: true,
+        data: {
+          hasProfile: false,
+          isComplete: false,
+          needsProfile: true
+        }
+      });
+    }
+
+    const isComplete = profile.isProfileComplete && 
+                      profile.fullName && 
+                      profile.profilePhoto;
+
+    res.json({
+      success: true,
+      data: {
+        hasProfile: true,
+        isComplete: isComplete,
+        needsProfile: !isComplete,
+        profile: isComplete ? profile : {
+          fullName: profile.fullName || '',
+          profilePhoto: profile.profilePhoto || null
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get profile status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get profile status'
+    });
+  }
+});
+
 // Get client profile
 router.get('/profile', auth, roleAuth('client'), async (req, res) => {
   try {
@@ -37,12 +78,58 @@ router.get('/profile', auth, roleAuth('client'), async (req, res) => {
   }
 });
 
-// Create/Update client profile
-router.post('/profile',
+// Upload profile photo
+router.post('/profile/photo',
   auth,
   roleAuth('client'),
   uploadProfilePhoto,
   handleUploadError,
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: 'No photo uploaded'
+        });
+      }
+
+      let profile = await ClientProfile.findOne({ userId: req.user._id });
+
+      if (profile) {
+        profile.profilePhoto = req.file.filename;
+        await profile.save();
+      } else {
+        // Create new profile with just photo
+        profile = new ClientProfile({
+          userId: req.user._id,
+          profilePhoto: req.file.filename,
+          isProfileComplete: false
+        });
+        await profile.save();
+      }
+
+      res.json({
+        success: true,
+        message: 'Profile photo uploaded successfully',
+        data: { 
+          profilePhoto: req.file.filename,
+          profile: profile
+        }
+      });
+    } catch (error) {
+      console.error('Upload photo error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to upload photo'
+      });
+    }
+  }
+);
+
+// Create/Update client profile
+router.post('/profile',
+  auth,
+  roleAuth('client'),
   validationRules.clientProfile,
   handleValidationErrors,
   async (req, res) => {
@@ -62,8 +149,7 @@ router.post('/profile',
           fullName,
           dateOfBirth,
           gender,
-          address,
-          isProfileComplete: true
+          address
         });
       } else {
         // Create new profile
@@ -72,22 +158,23 @@ router.post('/profile',
           fullName,
           dateOfBirth,
           gender,
-          address,
-          isProfileComplete: true
+          address
         });
       }
 
-      // Handle profile photo upload
-      if (req.file) {
-        profile.profilePhoto = req.file.filename;
-      }
+      // Check if profile is complete (has name and photo)
+      const isComplete = profile.fullName && profile.profilePhoto;
+      profile.isProfileComplete = isComplete;
 
       await profile.save();
 
       res.json({
         success: true,
         message: 'Profile saved successfully',
-        data: { profile }
+        data: { 
+          profile,
+          isComplete: isComplete
+        }
       });
     } catch (error) {
       console.error('Save profile error:', error);
