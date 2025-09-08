@@ -96,7 +96,7 @@ commissionLedgerSchema.statics.getTotalDue = async function(freelancerId) {
 };
 
 // Static method to check if freelancer can work (threshold check)
-commissionLedgerSchema.statics.canFreelancerWork = async function(freelancerId, threshold = 500) {
+commissionLedgerSchema.statics.canFreelancerWork = async function(freelancerId, threshold = 700) {
   const { totalDue } = await this.getTotalDue(freelancerId);
   return totalDue < threshold;
 };

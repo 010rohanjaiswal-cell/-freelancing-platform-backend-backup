@@ -560,7 +560,7 @@ router.post('/jobs/:jobId/apply',
           success: false,
           message: `You have ₹${totalDue} in commission dues. Please clear dues to continue working.`,
           commissionDue: totalDue,
-          threshold: 500,
+          threshold: 700,
           canWork: false
         });
       }
@@ -859,8 +859,8 @@ router.get('/commission-ledger', auth, roleAuth('freelancer'), async (req, res) 
         totalDue,
         pendingCount: count,
         canWork,
-        threshold: 500,
-        isOverThreshold: totalDue >= 500
+        threshold: 700,
+        isOverThreshold: totalDue >= 700
       }
     });
   } catch (error) {
@@ -1008,8 +1008,8 @@ router.get('/can-work', auth, roleAuth('freelancer'), async (req, res) => {
       data: {
         canWork,
         totalDue,
-        threshold: 500,
-        isOverThreshold: totalDue >= 500,
+        threshold: 700,
+        isOverThreshold: totalDue >= 700,
         message: canWork ? 
           'You can continue working' : 
           `You have ₹${totalDue} in commission dues. Please clear dues to continue working.`

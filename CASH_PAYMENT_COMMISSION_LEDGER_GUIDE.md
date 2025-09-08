@@ -1,7 +1,7 @@
 # 💰 Cash Payment & Commission Ledger System Guide
 
 ## Overview
-This guide covers the complete cash payment functionality and commission ledger system, allowing clients to pay via cash and freelancers to manage their commission dues with a ₹500 threshold system.
+This guide covers the complete cash payment functionality and commission ledger system, allowing clients to pay via cash and freelancers to manage their commission dues with a ₹700 threshold system.
 
 ## 🎯 Key Features Implemented
 
@@ -106,7 +106,7 @@ Client → Pay Cash → Modal → Paid → Commission Ledger Entry → Freelance
     "totalDue": 200,
     "pendingCount": 1,
     "canWork": true,
-    "threshold": 500,
+    "threshold": 700,
     "isOverThreshold": false
   }
 }
@@ -163,7 +163,7 @@ Client → Pay Cash → Modal → Paid → Commission Ledger Entry → Freelance
   "data": {
     "canWork": true,
     "totalDue": 200,
-    "threshold": 500,
+    "threshold": 700,
     "isOverThreshold": false,
     "message": "You can continue working"
   }
@@ -285,7 +285,7 @@ const commissionLedgerSchema = new mongoose.Schema({
 });
 
 // Static method to check work eligibility
-commissionLedgerSchema.statics.canFreelancerWork = async function(freelancerId, threshold = 500) {
+commissionLedgerSchema.statics.canFreelancerWork = async function(freelancerId, threshold = 700) {
   const { totalDue } = await this.getTotalDue(freelancerId);
   return totalDue < threshold;
 };
