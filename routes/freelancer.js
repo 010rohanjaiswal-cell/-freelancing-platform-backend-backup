@@ -552,7 +552,7 @@ router.post('/jobs/:jobId/apply',
 
       // Check commission threshold
       const CommissionLedger = require('../models/CommissionLedger');
-      const canWork = await CommissionLedger.canFreelancerWork(req.user._id, 500);
+      const canWork = await CommissionLedger.canFreelancerWork(req.user._id);
       
       if (!canWork) {
         const { totalDue } = await CommissionLedger.getTotalDue(req.user._id);
@@ -850,7 +850,7 @@ router.get('/commission-ledger', auth, roleAuth('freelancer'), async (req, res) 
     const { totalDue, count } = await CommissionLedger.getTotalDue(req.user._id);
     
     // Check if freelancer can work (threshold check)
-    const canWork = await CommissionLedger.canFreelancerWork(req.user._id, 500);
+    const canWork = await CommissionLedger.canFreelancerWork(req.user._id);
 
     res.json({
       success: true,
@@ -971,7 +971,7 @@ router.post('/commission-ledger/clear-due', auth, roleAuth('freelancer'), async 
     .sort({ createdAt: -1 });
 
     const { totalDue: newTotalDue } = await CommissionLedger.getTotalDue(req.user._id);
-    const canWork = await CommissionLedger.canFreelancerWork(req.user._id, 500);
+    const canWork = await CommissionLedger.canFreelancerWork(req.user._id);
 
     res.json({
       success: true,
@@ -1000,7 +1000,7 @@ router.get('/can-work', auth, roleAuth('freelancer'), async (req, res) => {
   try {
     const CommissionLedger = require('../models/CommissionLedger');
     
-    const canWork = await CommissionLedger.canFreelancerWork(req.user._id, 500);
+    const canWork = await CommissionLedger.canFreelancerWork(req.user._id);
     const { totalDue } = await CommissionLedger.getTotalDue(req.user._id);
 
     res.json({
