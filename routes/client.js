@@ -27,9 +27,7 @@ router.get('/profile/status', auth, roleAuth('client'), async (req, res) => {
       });
     }
 
-    const isComplete = profile.isProfileComplete && 
-                      profile.fullName && 
-                      profile.profilePhoto;
+    const isComplete = profile.fullName && profile.profilePhoto;
 
     res.json({
       success: true,
@@ -196,7 +194,7 @@ router.post('/jobs',
     try {
       // Check if profile is complete
       const profile = await ClientProfile.findOne({ userId: req.user._id });
-      if (!profile || !profile.isProfileComplete) {
+      if (!profile || !profile.fullName || !profile.profilePhoto) {
         return res.status(400).json({
           success: false,
           message: 'Please complete your profile before posting jobs'
